@@ -12,7 +12,6 @@ typedef struct {
     char telefone[50];
 } dadosCliente;
 
-
 /*---------- Validações ----------*/
 
 int validarNome(char nomeCliente[]) {
@@ -211,6 +210,74 @@ bool verificarCPFemBD(char cpf[], int *posicaoCliente, dadosCliente clientes[]) 
     
 }
 
+/*---------- Funções de Alterações ----------*/
+
+void alterarNome(dadosCliente *cliente) {
+        char nomeCadastro[100];
+        int erro = 0;
+
+        do {
+
+        printf("Informe seu nome: ");
+        fgets(nomeCadastro, sizeof(nomeCadastro), stdin);
+        nomeCadastro[strcspn(nomeCadastro, "\n")] = '\0';
+        
+        if (validarNome(nomeCadastro)) {
+            printf("Nome incorreto! Tente novamente!\n");
+            erro = 1;
+        } else {
+            erro = 0;
+        }
+        
+    } while (erro != 0);
+
+    strcpy(cliente->nome, nomeCadastro);
+}
+
+void alterarDataNascimento(dadosCliente *cliente) {
+    int dia, mes, ano;
+    int erro;
+    char dataNascimento[11];
+
+    do {
+        printf("Informe a data de nascimento (DD/MM/AAAA): ");
+        scanf("%d/%d/%d", &dia, &mes, &ano);
+        getchar();
+
+        if (!validarData(dia, mes, ano)) {
+            printf("Data inválida! Tente novamente!\n");
+            erro = 1;
+        } else {
+            erro = 0;
+        }
+    } while (erro != 0);
+
+    sprintf(dataNascimento, "%02d/%02d/%04d", dia, mes, ano);
+    strcpy(cliente->dataNascimento, dataNascimento);
+}
+
+void alterarTelefone(dadosCliente *cliente) {
+    char telefoneCadastro[15];
+    int erro = 0;
+
+    do {
+        printf("Informe seu celular (com DDD): ");
+        getchar();
+        fgets(telefoneCadastro, sizeof(telefoneCadastro), stdin);
+        telefoneCadastro[strcspn(telefoneCadastro, "\n")] = '\0';
+
+        if (!validarTelefone(telefoneCadastro)) {
+            printf("Número inválido! Tente novamente!\n");
+            erro = 1;
+        } else {
+            erro = 0;
+        }
+
+    } while (erro != 0);
+
+    strcpy(cliente->telefone, telefoneCadastro);
+}
+
 /*---------- Funções secundárias do programa ----------*/
 
 void adicionarCliente(char cpf[], int *posicaoCliente, dadosCliente clientes[]) {
@@ -292,6 +359,79 @@ void adicionarCliente(char cpf[], int *posicaoCliente, dadosCliente clientes[]) 
     printf("Cliente cadastrado com sucesso!\n");
 }  
 
+void alterarCadastro(int posicaoUsuario, dadosCliente clientes[]) {
+    int escolha;
+
+    do {
+        printf("\n\n");
+
+        printf("Escolha das opções abaixo: \n");
+        printf("1 - Nome\n");
+        printf("2 - Data de Nascimento\n");
+        printf("3 - Telefone\n");
+        printf("4 - Todos os dados\n");
+        printf("5 - Cancelar\n");
+        printf("\n");
+        printf("O que voce deseja alterar? ");
+        scanf("%d", &escolha);
+        getchar();
+    
+        if (escolha < 1 || escolha > 5) printf("Opçao inexistente! Tente novamente!\n");
+
+        switch (escolha) {
+        case 1:
+            alterarNome(&clientes[posicaoUsuario]);
+            break;
+        case 2:
+            alterarDataNascimento(&clientes[posicaoUsuario]);
+            break;
+        case 3: 
+            alterarTelefone(&clientes[posicaoUsuario]);
+            break;
+        case 4:
+            alterarNome(&clientes[posicaoUsuario]);
+            alterarDataNascimento(&clientes[posicaoUsuario]);
+            alterarTelefone(&clientes[posicaoUsuario]);
+        case 5:
+            return;
+        default:
+            break;
+        }
+
+    } while (escolha < 1 || escolha > 5);
+    
+}
+
+void mostrarDados(char cpf[], int* posicaoCliente, dadosCliente clientes[]) {
+    char escolha;
+    int posEncontrada;
+
+    for (int i = 0; i < *posicaoCliente; i++) {
+        if (strcmp(clientes[i].cpf, cpf) == 0)  {
+            printf("Cliente %d:\n", i + 1);
+            printf("Nome: %s\n", clientes[i].nome);
+            printf("Data de Nascimento: %s\n", clientes[i].dataNascimento);
+            printf("Telefone: %s\n", clientes[i].telefone);
+            printf("\n\n");
+            
+            posEncontrada = i;
+        }
+    }
+    
+    do {
+        printf("Deseja alterar algum dado desse cliente (S ou N)? ");
+        scanf(" %c", &escolha);
+        getchar();
+        escolha = toupper(escolha);
+
+        if (escolha == 'S') {
+            alterarCadastro(posEncontrada, clientes);
+        } else if (escolha == 'N') {
+            return;
+        }
+
+    } while (escolha != 'S' && escolha != 'N');
+}
 
 /*---------- Funções primárias do sistema ----------*/
 
@@ -323,7 +463,7 @@ void cadastrarCliente(dadosCliente clientes[], int *posicaoCliente) {
         printf("Cliente não cadastrado!\n\n");
 
         do {
-            printf("Deseja cadastrar cliente (S ou N)? \n");
+            printf("Deseja cadastrar cliente (S ou N)? ");
             scanf(" %c", &escolha);
             getchar();
             escolha = toupper(escolha);
@@ -338,6 +478,10 @@ void cadastrarCliente(dadosCliente clientes[], int *posicaoCliente) {
     } else {
 
         printf("Cliente já cadastrado ao sistema!\n");
+        printf("\n\n");
+        
+        mostrarDados(cpfUsuario, posicaoCliente, clientes);
+
         return; // Implementar mais tarde
     }
 
