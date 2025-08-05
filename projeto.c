@@ -262,7 +262,6 @@ void alterarTelefone(dadosCliente *cliente) {
 
     do {
         printf("Informe seu celular (com DDD): ");
-        getchar();
         fgets(telefoneCadastro, sizeof(telefoneCadastro), stdin);
         telefoneCadastro[strcspn(telefoneCadastro, "\n")] = '\0';
 
@@ -375,7 +374,9 @@ void alterarCadastro(int posicaoUsuario, dadosCliente clientes[]) {
         printf("O que voce deseja alterar? ");
         scanf("%d", &escolha);
         getchar();
-    
+
+        printf("\n");
+
         if (escolha < 1 || escolha > 5) printf("Opçao inexistente! Tente novamente!\n");
 
         switch (escolha) {
@@ -399,6 +400,14 @@ void alterarCadastro(int posicaoUsuario, dadosCliente clientes[]) {
         }
 
     } while (escolha < 1 || escolha > 5);
+
+    printf("Veja os dados atualizados:\n");
+    printf("\n");
+    printf("Nome: %s\n", clientes[posicaoUsuario].nome);
+    printf("CPF: %s\n", clientes[posicaoUsuario].cpf);
+    printf("Data de Nascimento: %s\n", clientes[posicaoUsuario].dataNascimento);
+    printf("Telefone: %s\n", clientes[posicaoUsuario].telefone);
+    printf("\n\n");
     
 }
 
@@ -442,7 +451,7 @@ void cadastrarCliente(dadosCliente clientes[], int *posicaoCliente) {
     char escolha;
 
     do {
-        printf("Digite o CPF (000.000.000-0): ");
+        printf("Digite o CPF (000.000.000-00): ");
         fgets(cpfUsuario, sizeof(cpfUsuario), stdin);
         cpfUsuario[strcspn(cpfUsuario, "\n")] = '\0';
 
@@ -487,6 +496,316 @@ void cadastrarCliente(dadosCliente clientes[], int *posicaoCliente) {
 
 }
 
+void buscarCliente(dadosCliente clientes[], int *posicaoCliente) {
+    printf("\n\n");
+
+    if ((*posicaoCliente) == 0) {
+        printf("Ainda nao ha clientes cadastrados no sistema!\n");
+    } else {
+        
+        int valida;
+        char cpfUsuario[15];  // espaço para CPF com pontos e traço
+    
+        do {
+            printf("Digite o CPF (000.000.000-00): ");
+            fgets(cpfUsuario, sizeof(cpfUsuario), stdin);
+            cpfUsuario[strcspn(cpfUsuario, "\n")] = '\0';
+    
+            // Validar se o cpf é válido!
+            valida = validarCPF(cpfUsuario);
+    
+            if (!valida) {
+                printf("CPF Invalido, tente novamente!\n");
+            }
+    
+            bool cadastrado = verificarCPFemBD(cpfUsuario, posicaoCliente, clientes);
+    
+            char escolha;
+    
+            if (!cadastrado) {
+                printf("Cliente nao cadastrado no sistema!\n");
+                printf("\n");
+                do {
+                    printf("Deseja cadastrar? (S ou N): ");
+                    scanf(" %c", &escolha);
+                    getchar();
+                    escolha = toupper(escolha);
+    
+                    if (escolha != 'S' && escolha != 'N') {
+                        printf("Escolha invalida, tente novamente!\n\n");
+                    }
+                } while (escolha != 'S' && escolha != 'N');
+    
+                if (escolha == 'S') {
+                    adicionarCliente(cpfUsuario, posicaoCliente, clientes);
+                }
+            } else {
+                mostrarDados(cpfUsuario, posicaoCliente, clientes);
+            }
+    
+        } while (!valida);
+    }
+}
+
+void aniversariantes(dadosCliente clientes[], int posicaoCliente) {
+    int mesEscolhido;
+
+    if (posicaoCliente == 0) {
+        printf("Nao nenhum cliente cadastrado na loja!\n");
+    } else {
+        do {
+            printf("Digite o mes desejado: ");
+            scanf("%d", &mesEscolhido);
+    
+            if (mesEscolhido < 1 || mesEscolhido > 12) {
+                printf("O mes escolhido nao existe! Tente novamente!");
+            }
+    
+        } while (mesEscolhido < 1 || mesEscolhido > 12);
+        
+        dadosCliente aniversariantesMes[posicaoCliente];
+        int totalAniversariantes = 0;
+    
+        for (int i = 0; i < posicaoCliente; i++) {
+            char mesStr[3];
+            strncpy(mesStr, clientes[i].dataNascimento + 3, 2);
+            mesStr[2] = '\0';
+    
+            int mes = atoi(mesStr); // Transforma a string em numero
+    
+            if (mes == mesEscolhido) {
+                aniversariantesMes[totalAniversariantes] = clientes[i];
+                totalAniversariantes++;
+            }
+        }
+    
+        if (totalAniversariantes == 0) {
+            printf("Nenhum cliente faz aniversario este mes\n");
+        }
+
+        for (int i = 0; i < totalAniversariantes - 1; i++) {
+            for (int j = 0; j < totalAniversariantes - i - 1; j++) {
+                char diaStr1[3], diaStr2[3];
+                
+                // extrai o dia do primeiro cliente
+                strncpy(diaStr1, aniversariantesMes[j].dataNascimento, 2);
+                diaStr1[2] = '\0';
+                int dia1 = atoi(diaStr1);
+
+                // extrai o dia do segundo cliente
+                strncpy(diaStr2, aniversariantesMes[j + 1].dataNascimento, 2);
+                diaStr2[2] = '\0';
+                int dia2 = atoi(diaStr2);
+
+                if (dia1 > dia2) {
+                    // troca os clientes
+                    dadosCliente temp = aniversariantesMes[j];
+                    aniversariantesMes[j] = aniversariantesMes[j + 1];
+                    aniversariantesMes[j + 1] = temp;
+                }
+            }    
+        }
+
+        printf("\n%d cliente(s) faz aniversario no mes %d:\n", totalAniversariantes, mesEscolhido);
+
+        for (int i = 0; i < totalAniversariantes; i++) {
+            char dia[3], mes[3], ano[5];
+
+            strncpy(dia, aniversariantesMes[i].dataNascimento, 2);
+            dia[2] = '\0';
+
+            strncpy(mes, aniversariantesMes[i].dataNascimento + 3, 2);
+            mes[2] = '\0';
+
+            strncpy(ano, aniversariantesMes[i].dataNascimento + 6, 4);
+            ano[4] = '\0';
+
+            printf("\n");
+            printf("Cliente %d\n", i + 1);
+            printf("\n\n");
+            printf("Nome: %s\n", aniversariantesMes[i].nome);
+            printf("Data de Nascimento: %s/%s/%s\n", dia, mes, ano);
+            printf("Telefone: %s\n", aniversariantesMes[i].telefone);
+        }
+        printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+    }
+    printf("\n\n");
+}
+
+int buscarClienteVenda(dadosCliente clientes[], int *posicaoCliente) {
+    printf("\n\n");
+
+    int valida;
+    char cpfUsuario[15];  // espaço para CPF com pontos e traço
+    
+    do {
+        printf("Digite o CPF (000.000.000-00): ");
+        fgets(cpfUsuario, sizeof(cpfUsuario), stdin);
+        cpfUsuario[strcspn(cpfUsuario, "\n")] = '\0';
+    
+        // Validar se o cpf é válido!
+        valida = validarCPF(cpfUsuario);
+    
+        if (!valida) {
+            printf("CPF Invalido, tente novamente!\n");
+        }
+        
+        
+    } while (!valida);
+    
+    bool cadastrado = verificarCPFemBD(cpfUsuario, posicaoCliente, clientes);
+    
+    if (!cadastrado) {
+        char escolha;
+
+        printf("Cliente nao cadastrado no sistema!\n");
+        printf("\n");
+        do {
+            printf("Deseja cadastrar? (S ou N): ");
+            scanf(" %c", &escolha);
+            getchar();
+            escolha = toupper(escolha);
+
+            if (escolha != 'S' && escolha != 'N') {
+                printf("Escolha invalida, tente novamente!\n\n");
+            }
+        } while (escolha != 'S' && escolha != 'N');
+
+        if (escolha == 'S') {
+            adicionarCliente(cpfUsuario, posicaoCliente, clientes);
+        }
+
+    }
+
+    // mostrarDados(cpfUsuario, posicaoCliente, clientes);
+    return (*posicaoCliente);
+}
+
+void realizarVenda(dadosCliente clientes[], int posicao, int id) {
+    char produtos[10][50] = {"ChocoDelícia", "Amargo Supremo", "Branco Neve", "Crocante Caramelo", 
+    "Noir Intenso", "ChocoMenta", "ChocoCafé", "ChocoKids", "Branco Crocante", "ChocoLaranja"};
+
+    double valorProdutos[10] = {9.90, 12.50, 10.00, 11.75, 13.90, 10.50, 12.00, 8.50, 11.00, 10.00};
+
+    char flagContinuar = 0;
+    int valorAPagar = 0;
+    
+    double carrinhoValorCliente[100]; // Vai até 100 produtos
+    char carrinhoProdutos[10][50];
+    int posCarrinho = 0;
+
+    do {
+        int escolha;
+        int quantidadeChoco;
+
+        printf("Chocolates disponiveis:\n");
+        printf("Nome do Chocolate      Tipo de Chocolate     Preço (R$)\n");
+        printf("----------------------------------------------------------\n");
+        printf("1. ChocoDelícia         Ao Leite              R$  9.90\n");
+        printf("2. Amargo Supremo       Amargo                R$ 12.50\n");
+        printf("3. Branco Neve          Branco                R$ 10.00\n");
+        printf("4. Crocante Caramelo    Ao Leite              R$ 11.75\n");
+        printf("5. Noir Intenso         Amargo                R$ 13.90\n");
+        printf("6. ChocoMenta           Menta                 R$ 10.50\n");
+        printf("7. ChocoCafé            Café                  R$ 12.00\n");
+        printf("8. ChocoKids            Ao Leite              R$  8.50\n");
+        printf("9. Branco Crocante      Branco                R$ 11.00\n");
+        printf("10. ChocoLaranja        Laranja               R$ 10.90\n");
+
+        do {
+            printf("Escolha um chocolate (Digite o numero relacionado a ele): ");
+            scanf("%d", &escolha);
+
+            if (escolha < 1 && escolha > 10) {
+                printf("\a");
+                printf("Produto inexistente, escolha novamente!\n");
+            }
+
+        } while (escolha < 1 && escolha > 10);
+
+        do {
+            printf("Deseja adquirir quantas unidades? ");
+            scanf("%d", &quantidadeChoco);
+        } while (quantidadeChoco <= 0);
+        
+        
+        carrinhoValorCliente[posCarrinho] = quantidadeChoco * valorProdutos[escolha - 1];
+        carrinhoProdutos[posCarrinho][50] = produtos[escolha - 1];
+
+
+        do {
+            printf("Deseja comprar mais algum chocolate?\n");
+            scanf(" %c", &flagContinuar);
+            
+            if (flagContinuar != 'S' && flagContinuar != 'N') {
+                printf("Opcao invalida! Tente novamente!\n");
+            }
+            
+        } while (flagContinuar != 'S' && flagContinuar != 'N');
+        
+        
+        if (flagContinuar == 'S') {
+            posCarrinho++; // mudar depois
+        }
+
+    } while (flagContinuar == 'S');
+
+    printf("Total do Carrinho:\n");
+
+    for (int i = 0; i < posCarrinho; i++) {
+        // Continuar daqui!
+    }
+    
+    
+}
+
+void pre_venda(dadosCliente clientes[], int *posicaoCliente) {
+    char escolha;
+    int novoCadastrado;
+    // int flagNaoCadastrado = 0;
+    int posClienteRegistrado;
+
+    do {
+        printf("O cliente tem cadastro no sistema? (S/N): \n");
+        scanf(" %c", &escolha);
+        getchar();
+        escolha = toupper(escolha);
+
+        if (escolha != 'S' && escolha != 'N') {
+            printf("Opcao Invalida! Tente Novamente!\n");
+        }
+    } while (escolha != 'S' && escolha != 'N');
+
+    if (escolha == 'N') {
+        char escolhaCadastro;
+
+        do {
+            printf("O cliente deseja ter cadastro na loja?\n");
+            printf("Beneficio: 20%% de desconto na compra final!\n");
+            printf("(S/N) : ");
+            scanf(" %c", &escolhaCadastro);
+            getchar();
+
+            if (escolhaCadastro != 'S' && escolhaCadastro != 'N') {
+                printf("Opcao Invalida! Tente Novamente!\n");
+            }
+
+        } while (escolhaCadastro != 'S' && escolhaCadastro != 'N');
+
+        if (escolhaCadastro == 'S') {
+            cadastrarCliente(clientes, posicaoCliente);
+            novoCadastrado = (*posicaoCliente);
+            realizarVenda(clientes, novoCadastrado, 1);
+        } else {
+            // flagNaoCadastrado = 1;
+            realizarVenda(clientes, 0, NULL);
+        }
+
+    } else {   
+        posClienteRegistrado = buscarClienteVenda(clientes, posicaoCliente);
+        realizarVenda(clientes, posClienteRegistrado, 1);
+    }
+}
 
 int main() {
     dadosCliente clientes[100];
@@ -508,7 +827,7 @@ int main() {
         printf("2 - Buscar Cliente por CPF\n");
         printf("3 - Aniversariantes do Mês\n");
         printf("4 - Realizar Venda\n");
-        printf("5 - Cancelar\n");
+        printf("5 - Encerrar programa\n");
         printf("\n");
         printf("Digite a escolha desejada: ");
         scanf("%d", &escolha);
@@ -526,13 +845,14 @@ int main() {
             cadastrarCliente(clientes, &posicaoCliente);
             break;
         case 2:
-            // buscarCliente();
+            buscarCliente(clientes, &posicaoCliente);
             break;
         case 3: 
-            // aniversariantes();
+            aniversariantes(clientes, posicaoCliente);
             break;
         case 4:
-            // realizarVenda();
+            pre_venda(clientes, &posicaoCliente);
+            break;
         case 5:
             printf("\n\n");
             printf("Programa encerrado com sucesso!\n\n");
