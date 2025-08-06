@@ -5,11 +5,17 @@
 #include <ctype.h>
 #include <stdbool.h>
 
+/*---------- Constantes ----------*/
+#define TAM_CPF 15
+#define TAM_NOME 100
+#define TAM_DATA 11
+#define TAM_TEL 17
+
 typedef struct {
-    char cpf[15];
-    char nome[100];
-    char dataNascimento[11];
-    char telefone[50];
+    char cpf[TAM_CPF];
+    char nome[TAM_NOME];
+    char dataNascimento[TAM_DATA];
+    char telefone[TAM_TEL];
 } dadosCliente;
 
 /*---------- Validações ----------*/
@@ -176,7 +182,6 @@ int validarTelefone(char telefone[]) {
 
     telefoneAjustado[j] = '\0';
 
-
     if (j != 11) {
         return 0;
     }
@@ -257,7 +262,7 @@ void alterarDataNascimento(dadosCliente *cliente) {
 }
 
 void alterarTelefone(dadosCliente *cliente) {
-    char telefoneCadastro[15];
+    char telefoneCadastro[TAM_TEL];
     int erro = 0;
 
     do {
@@ -280,7 +285,7 @@ void alterarTelefone(dadosCliente *cliente) {
 /*---------- Funções secundárias do programa ----------*/
 
 void adicionarCliente(char cpf[], int *posicaoCliente, dadosCliente clientes[]) {
-    
+
     char nomeCadastro[100];
     char telefoneCadastro[20];
     char dataNascimento[11];
@@ -447,7 +452,72 @@ void mostrarDados(char cpf[], int* posicaoCliente, dadosCliente clientes[], int 
     }
 }
 
+void imprimirCardapio() {
+    printf("\n\n");
+    printf("Chocolates disponiveis:\n\n");
+    printf("Nome do Chocolate      Tipo de Chocolate     Preço (R$)\n");
+    printf("----------------------------------------------------------\n");
+    printf("1. ChocoDelícia         Ao Leite              R$  9.90\n");
+    printf("2. Amargo Supremo       Amargo                R$ 12.50\n");
+    printf("3. Branco Neve          Branco                R$ 10.00\n");
+    printf("4. Crocante Caramelo    Ao Leite              R$ 11.75\n");
+    printf("5. Noir Intenso         Amargo                R$ 13.90\n");
+    printf("6. ChocoMenta           Menta                 R$ 10.50\n");
+    printf("7. ChocoCafé            Café                  R$ 12.00\n");
+    printf("8. ChocoKids            Ao Leite              R$  8.50\n");
+    printf("9. Branco Crocante      Branco                R$ 11.00\n");
+    printf("10. ChocoLaranja        Laranja               R$ 10.90\n");
+    printf("----------------------------------------------------------\n");
+}
 /*---------- Funções primárias do sistema ----------*/
+
+int localizarOuCadastrarCliente(dadosCliente clientes[], int *posicaoCliente, int mostrarDadosUsuario) {
+    char cpf[15];
+    int pos = -1;
+
+    do {
+        printf("Digite o CPF (000.000.000-00): ");
+        fgets(cpf, sizeof(cpf), stdin);
+        cpf[strcspn(cpf, "\n")] = '\0';
+
+        if (!validarCPF(cpf)) {
+            printf("CPF inválido! Tente novamente.\n");
+        } else {
+            break;
+        }
+    } while (1);
+
+    if (verificarCPFemBD(cpf, posicaoCliente, clientes)) {
+        for (int i = 0; i < *posicaoCliente; i++) {
+            if (strcmp(clientes[i].cpf, cpf) == 0) {
+                pos = i;
+                break;
+            }
+        }
+
+        if (mostrarDadosUsuario) {
+            mostrarDados(cpf, posicaoCliente, clientes, 1);
+        }
+
+    } else {
+        char escolha;
+        printf("Cliente não cadastrado no sistema!\n");
+
+        do {
+            printf("Deseja cadastrar? (S/N): ");
+            scanf(" %c", &escolha);
+            getchar();
+            escolha = toupper(escolha);
+        } while (escolha != 'S' && escolha != 'N');
+
+        if (escolha == 'S') {
+            adicionarCliente(cpf, posicaoCliente, clientes);
+            pos = *posicaoCliente - 1;
+        }
+    }
+
+    return pos; // -1 se não cadastrou
+}
 
 void cadastrarCliente(dadosCliente clientes[], int *posicaoCliente) {
     // Verificar se o cliente é cadastrado
@@ -505,50 +575,10 @@ void buscarCliente(dadosCliente clientes[], int *posicaoCliente) {
 
     if ((*posicaoCliente) == 0) {
         printf("Ainda nao ha clientes cadastrados no sistema!\n");
-    } else {
-        
-        int valida;
-        char cpfUsuario[15];  // espaço para CPF com pontos e traço
+        return;
+    } 
     
-        do {
-            printf("Digite o CPF (000.000.000-00): ");
-            fgets(cpfUsuario, sizeof(cpfUsuario), stdin);
-            cpfUsuario[strcspn(cpfUsuario, "\n")] = '\0';
-    
-            // Validar se o cpf é válido!
-            valida = validarCPF(cpfUsuario);
-    
-            if (!valida) {
-                printf("CPF Invalido, tente novamente!\n");
-            }
-    
-            bool cadastrado = verificarCPFemBD(cpfUsuario, posicaoCliente, clientes);
-    
-            char escolha;
-    
-            if (!cadastrado) {
-                printf("Cliente nao cadastrado no sistema!\n");
-                printf("\n");
-                do {
-                    printf("Deseja cadastrar? (S ou N): ");
-                    scanf(" %c", &escolha);
-                    getchar();
-                    escolha = toupper(escolha);
-    
-                    if (escolha != 'S' && escolha != 'N') {
-                        printf("Escolha invalida, tente novamente!\n\n");
-                    }
-                } while (escolha != 'S' && escolha != 'N');
-    
-                if (escolha == 'S') {
-                    adicionarCliente(cpfUsuario, posicaoCliente, clientes);
-                }
-            } else {
-                mostrarDados(cpfUsuario, posicaoCliente, clientes, 1);
-            }
-    
-        } while (!valida);
-    }
+    localizarOuCadastrarCliente(clientes, posicaoCliente, 1); // o 1 mostra os dados
 }
 
 void aniversariantes(dadosCliente clientes[], int posicaoCliente) {
@@ -638,66 +668,12 @@ void aniversariantes(dadosCliente clientes[], int posicaoCliente) {
 }
 
 int buscarClienteVenda(dadosCliente clientes[], int *posicaoCliente) {
-    printf("\n\n");
-
-    int valida;
-    char cpfUsuario[15];  // espaço para CPF com pontos e traço
-    int flagProcurar = 0;
-    int posicao = -1;
-
-    do {
-        printf("Digite o CPF (000.000.000-00): ");
-        fgets(cpfUsuario, sizeof(cpfUsuario), stdin);
-        cpfUsuario[strcspn(cpfUsuario, "\n")] = '\0';
-    
-        // Validar se o cpf é válido!
-        valida = validarCPF(cpfUsuario);
-    
-        if (!valida) {
-            printf("CPF Invalido, tente novamente!\n");
-        }
-        
-        
-    } while (!valida);
-    
-    bool cadastrado = verificarCPFemBD(cpfUsuario, posicaoCliente, clientes);
-    
-    if (!cadastrado) {
-        char escolha;
-
-        printf("Cliente nao cadastrado no sistema!\n");
-        printf("\n");
-        do {
-            printf("Deseja cadastrar? (S ou N): ");
-            scanf(" %c", &escolha);
-            getchar();
-            escolha = toupper(escolha);
-
-            if (escolha != 'S' && escolha != 'N') {
-                printf("Escolha invalida, tente novamente!\n\n");
-            }
-        } while (escolha != 'S' && escolha != 'N');
-
-        if (escolha == 'S') {
-            adicionarCliente(cpfUsuario, posicaoCliente, clientes);
-            flagProcurar = 1;
-        }
-
-    } else {
-        flagProcurar = 1;
+    if (*posicaoCliente == 0) {
+        printf("Ainda nao ha clientes cadastrados no sistema!\n");
+        return -1;
     }
 
-    if (flagProcurar == 1) {
-        // Se já está cadastrado, precisamos localizar a posição
-        for (int i = 0; i < *posicaoCliente; i++) {
-            if (strcmp(clientes[i].cpf, cpfUsuario) == 0) {
-                posicao = i;
-                break;
-            }
-        }
-    }
-
-    return posicao;
+    return localizarOuCadastrarCliente(clientes, posicaoCliente, 0); // 0 não mostra dados
 }
 
 int cadastrarClienteVenda(dadosCliente clientes[],int *posicaoCliente) {
@@ -729,7 +705,6 @@ int cadastrarClienteVenda(dadosCliente clientes[],int *posicaoCliente) {
             getchar();
             adicionarCliente(cpfUsuario, posicaoCliente, clientes);
             return *posicaoCliente - 1;
-            break;
 
         } else {
             printf("Já existe cliente cadastrado com esse CPF no sistema!\n");
@@ -761,40 +736,26 @@ void realizarVenda(dadosCliente clientes[], int posicao, int id) {
     double valorAPagar = 0;
     
     double carrinhoValorCliente[100]; // Vai até 100 produtos
-    char carrinhoProdutos[10][50];
+    char carrinhoProdutos[100][50];
     int posCarrinho = 0;
     int unidadesProduto[100];
 
-    if (id != -1) {
-        printf("Ola, %s!\n", clientes[posicao].nome);
+    if (id != -1 && posicao >= 0) { // Testar alteração
+        printf("\nOla, %s!\n", clientes[posicao].nome);
         printf("Voce tem 20%% de desconto no final da compra!\n");
     }
 
     do {
         int escolha;
         int quantidadeChoco;
-        printf("\n\n");
-        printf("Chocolates disponiveis:\n\n");
-        printf("Nome do Chocolate      Tipo de Chocolate     Preço (R$)\n");
-        printf("----------------------------------------------------------\n");
-        printf("1. ChocoDelícia         Ao Leite              R$  9.90\n");
-        printf("2. Amargo Supremo       Amargo                R$ 12.50\n");
-        printf("3. Branco Neve          Branco                R$ 10.00\n");
-        printf("4. Crocante Caramelo    Ao Leite              R$ 11.75\n");
-        printf("5. Noir Intenso         Amargo                R$ 13.90\n");
-        printf("6. ChocoMenta           Menta                 R$ 10.50\n");
-        printf("7. ChocoCafé            Café                  R$ 12.00\n");
-        printf("8. ChocoKids            Ao Leite              R$  8.50\n");
-        printf("9. Branco Crocante      Branco                R$ 11.00\n");
-        printf("10. ChocoLaranja        Laranja               R$ 10.90\n");
-        printf("----------------------------------------------------------\n");
+
+        imprimirCardapio();
 
         do {
             printf("Escolha um chocolate (Digite o numero relacionado a ele): ");
             scanf("%d", &escolha);
 
             if (escolha < 1 || escolha > 10) {
-                printf("\a");
                 printf("Produto inexistente, escolha novamente!\n");
             }
 
@@ -849,24 +810,31 @@ void realizarVenda(dadosCliente clientes[], int posicao, int id) {
 }
 
 void pre_venda(dadosCliente clientes[], int *posicaoCliente) {
-    char escolha;
+    char escolha = ' ';
     int posClienteRegistrado;
+    int flagPular = 0;
 
-    do {
-        printf("\n");
-        printf("O cliente tem cadastro no sistema? (S/N): ");
-        scanf(" %c", &escolha);
-        getchar();
+    if (*posicaoCliente == 0) {
+        flagPular = 1;
+    }
 
-        escolha = toupper(escolha);
+    if (flagPular == 0) {
+        do {
+            printf("\n");
+            printf("O cliente tem cadastro no sistema? (S/N): ");
+            scanf(" %c", &escolha);
+            getchar();
+    
+            escolha = toupper(escolha);
+    
+            if (escolha != 'S' && escolha != 'N') {
+                printf("Opcao Invalida! Tente Novamente!\n");
+            }
+    
+        } while (escolha != 'S' && escolha != 'N');
+    }
 
-        if (escolha != 'S' && escolha != 'N') {
-            printf("Opcao Invalida! Tente Novamente!\n");
-        }
-
-    } while (escolha != 'S' && escolha != 'N');
-
-    if (escolha == 'N') {
+    if (escolha == 'N' || flagPular == 1) {
         char escolhaCadastro;
 
         do {
@@ -897,13 +865,17 @@ void pre_venda(dadosCliente clientes[], int *posicaoCliente) {
             realizarVenda(clientes, 0, -1);
         }
 
-    } else {   
-        posClienteRegistrado = buscarClienteVenda(clientes, posicaoCliente);
-
-        if (posClienteRegistrado == -1) {
-            realizarVenda(clientes, posClienteRegistrado, -1);
+    } else {
+        if (*posicaoCliente > 0) {
+            posClienteRegistrado = buscarClienteVenda(clientes, posicaoCliente);
+    
+            if (posClienteRegistrado == -1) {
+                realizarVenda(clientes, posClienteRegistrado, -1);
+            } else {
+                realizarVenda(clientes, posClienteRegistrado, 1);
+            }
         } else {
-            realizarVenda(clientes, posClienteRegistrado, 1);
+            printf("Nao existe clientes cadastrados no sistema!\n");
         }
     }
 }
@@ -915,7 +887,8 @@ int main() {
     int escolha;
     printf("\n");
     printf("Sistema da Loja de Chocolate!\n");
-    printf("Projeto realizado em: 30/07/2025\n");
+    printf("Projeto realizado em: 30/07/2025 - 06/08/2025\n");
+    printf("Desenvolvido por: Augusto Bruno Menezes");
     printf("\n\n");
 
     // Estrutura de Repetição para caso o usuário digite errado
@@ -966,6 +939,5 @@ int main() {
     } while (escolha != 5);
 
 
-    
     return 0;
 }
